@@ -6,7 +6,8 @@
 var mongoose = require('mongoose'),
 	errorHandler = require('./errors.server.controller'),
 	Article = mongoose.model('Article'),
-	_ = require('lodash');
+	_ = require('lodash'),
+	hashHandler = require('./hashids.server.controller');
 
 /**
  * Create a article
@@ -21,7 +22,7 @@ exports.create = function(req, res) {
 				message: errorHandler.getErrorMessage(err)
 			});
 		} else {
-			res.json(article);
+			res.json(hashHandler.encodeHexIds(article));
 		}
 	});
 };
@@ -30,7 +31,7 @@ exports.create = function(req, res) {
  * Show the current article
  */
 exports.read = function(req, res) {
-	res.json(req.article);
+	res.json(hashHandler.encodeHexIds(req.article));
 };
 
 /**
@@ -39,7 +40,7 @@ exports.read = function(req, res) {
 exports.update = function(req, res) {
 	var article = req.article;
 
-	article = _.extend(article, req.body);
+	article = _.extend(article, hashHandler.decodeHexIds(req.body));
 
 	article.save(function(err) {
 		if (err) {
@@ -47,7 +48,8 @@ exports.update = function(req, res) {
 				message: errorHandler.getErrorMessage(err)
 			});
 		} else {
-			res.json(article);
+
+			res.json(hashHandler.encodeHexIds(article));
 		}
 	});
 };
@@ -79,7 +81,7 @@ exports.list = function(req, res) {
 				message: errorHandler.getErrorMessage(err)
 			});
 		} else {
-			res.json(articles);
+			res.json(hashHandler.encodeHexIds(articles));
 		}
 	});
 };
@@ -89,6 +91,8 @@ exports.list = function(req, res) {
  */
 exports.articleByID = function(req, res, next, id) {
 
+	id = hashHandler.decodeHex(id.toString());
+	
 	if (!mongoose.Types.ObjectId.isValid(id)) {
 		return res.status(400).send({
 			message: 'Article is invalid'
